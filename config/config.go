@@ -18,11 +18,9 @@ type ServerConfig struct {
 }
 
 type DefaultServerConfig struct {
-	AppVersion     string        `yaml:"AppVersion"`
-	Port           string        `yaml:"Port"`
-	ReadTimeout    time.Duration `yaml:"ReadTimeout"`
-	WriteTimeout   time.Duration `yaml:"WriteTimeout"`
-	MaxHeaderBytes int           `yaml:"MaxHeaderBytes"`
+	Port         string        `yaml:"Port"`
+	ReadTimeout  time.Duration `yaml:"ReadTimeout"`
+	WriteTimeout time.Duration `yaml:"WriteTimeout"`
 }
 
 type Logger struct {
