@@ -1,10 +1,8 @@
 server:
   default:
-    AppVersion: 1.0.0
     Port: 8088
     ReadTimeout: 5
     WriteTimeout: 5
-    MaxHeaderBytes: 1048576
 
 logger:
   level: info
