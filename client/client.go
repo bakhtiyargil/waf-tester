@@ -14,7 +14,11 @@ type Client struct {
 	ResponseBody string
 }
 
-func (cc *Client) DoRequest(method, url, requestBody string) (*http.Response, error) {
+func (cc *Client) DoRequestWithoutBody(method, url string) (*http.Response, error) {
+	return doRequest(method, url, "")
+}
+
+func doRequest(method, url, requestBody string) (*http.Response, error) {
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -29,9 +33,6 @@ func (cc *Client) DoRequest(method, url, requestBody string) (*http.Response, er
 	req, _ := http.NewRequest(method, url, bodyReader)
 	req.Header.Add(HeaderContentType, "application/json")
 	resp, err := client.Do(req)
-
-	//var a, _ = io.ReadAll(resp.Body)
-	//fmt.Print(string(a))
 
 	return resp, err
 }

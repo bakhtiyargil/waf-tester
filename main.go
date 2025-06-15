@@ -8,6 +8,7 @@ import (
 	"time"
 	"waf-tester/client"
 	"waf-tester/config"
+	"waf-tester/domain"
 )
 
 func main() {
@@ -35,6 +36,7 @@ func main() {
 	wafCounter := make(chan int, len(lines))
 	var cc client.Client
 
+	target := domain.GetTestTargetInstance()
 	start := time.Now()
 	for _, line := range lines {
 		limiter <- struct{}{}
@@ -44,7 +46,7 @@ func main() {
 				<-limiter
 				wg.Done()
 			}()
-			resp, _ := cc.DoRequest("GET", "http://waffy.xyz/DVWA/"+line, "")
+			resp, _ := cc.DoRequestWithoutBody(target.Method, target.GetUrl()+"/"+line)
 			if resp.StatusCode == 403 {
 				wafCounter <- 1
 			}
@@ -62,7 +64,6 @@ func main() {
 		i++
 	}
 
-	//64
 	fmt.Println(i)
 	fmt.Println("elapsed: ", end.Sub(start))
 }
