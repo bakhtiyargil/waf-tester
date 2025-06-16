@@ -46,8 +46,8 @@ func main() {
 				<-limiter
 				wg.Done()
 			}()
-			resp, _ := cc.DoRequestWithoutBody(target.Method, target.GetUrl()+"/"+line)
-			if resp.StatusCode == 403 {
+			_, statusCode, _ := cc.DoRequestWithoutBody(target.Method, target.GetUrl()+"/"+line)
+			if statusCode == 403 {
 				wafCounter <- 1
 			}
 		}(line)

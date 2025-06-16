@@ -10,6 +10,8 @@ type Target struct {
 	Method string
 }
 
+var testTarget *Target
+
 func (t *Target) GetUrl() string {
 	if strings.HasPrefix(t.Host, "http://") || strings.HasPrefix(t.Host, "https://") {
 		return t.Host + t.Path
@@ -17,11 +19,15 @@ func (t *Target) GetUrl() string {
 	return "http://" + t.Host + t.Path
 }
 
-// add singleton
+// make concurrent safe
 func GetTestTargetInstance() *Target {
-	return &Target{
-		Host:   "http://waffy.xyz",
-		Path:   "/DVWA",
-		Method: "GET",
+	if testTarget != nil {
+		return testTarget
+	} else {
+		return &Target{
+			Host:   "http://waffy.xyz",
+			Path:   "/DVWA",
+			Method: "GET",
+		}
 	}
 }

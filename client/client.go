@@ -10,12 +10,22 @@ const (
 	HeaderContentType = "Content-Type"
 )
 
-type Client struct {
-	ResponseBody string
-}
+type Client struct{}
 
-func (cc *Client) DoRequestWithoutBody(method, url string) (*http.Response, error) {
-	return doRequest(method, url, "")
+func (cc *Client) DoRequestWithoutBody(method, url string) (respBody []byte, statusCode int, err error) {
+	resp, err := doRequest(method, url, "")
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() {
+		closeErr := resp.Body.Close()
+		if err == nil && closeErr != nil {
+			err = closeErr
+		}
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	return body, resp.StatusCode, err
 }
 
 func doRequest(method, url, requestBody string) (*http.Response, error) {
@@ -30,7 +40,11 @@ func doRequest(method, url, requestBody string) (*http.Response, error) {
 		bodyReader = strings.NewReader(requestBody)
 	}
 
-	req, _ := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+
 	req.Header.Add(HeaderContentType, "application/json")
 	resp, err := client.Do(req)
 
