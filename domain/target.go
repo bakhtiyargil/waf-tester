@@ -19,7 +19,6 @@ func (t *Target) GetUrl() string {
 	return "http://" + t.Host + t.Path
 }
 
-// make concurrent safe
 func GetTestTargetInstance() *Target {
 	if testTarget != nil {
 		return testTarget
