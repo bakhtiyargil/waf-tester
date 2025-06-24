@@ -10,7 +10,6 @@ import (
 
 type Config struct {
 	Server ServerConfig
-	Logger Logger
 }
 
 type ServerConfig struct {
@@ -18,13 +17,11 @@ type ServerConfig struct {
 }
 
 type DefaultServerConfig struct {
-	Port         string        `yaml:"Port"`
-	ReadTimeout  time.Duration `yaml:"ReadTimeout"`
-	WriteTimeout time.Duration `yaml:"WriteTimeout"`
-}
-
-type Logger struct {
-	Level string `yaml:"level"`
+	Port           string        `yaml:"Port"`
+	ReadTimeout    time.Duration `yaml:"ReadTimeout"`
+	WriteTimeout   time.Duration `yaml:"WriteTimeout"`
+	IdleTimeout    time.Duration `yaml:"IdleTimeout"`
+	MaxHeaderBytes int           `yaml:"MaxHeaderBytes"`
 }
 
 func (c *Config) LoadConfig(file string) *Config {
@@ -42,6 +39,5 @@ func (c *Config) LoadConfig(file string) *Config {
 	if err != nil {
 		log.Fatalf("error while parsing file %s, %v", file, err)
 	}
-
 	return c
 }

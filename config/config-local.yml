@@ -1,8 +1,7 @@
 server:
   default:
-    Port: 8088
-    ReadTimeout: 5
-    WriteTimeout: 5
-
-logger:
-  level: info
+    Port: :8088
+    ReadTimeout: 10
+    WriteTimeout: 10
+    IdleTimeout: 120
+    MaxHeaderBytes: 1048576
