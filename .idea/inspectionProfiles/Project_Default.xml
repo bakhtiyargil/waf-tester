@@ -20,7 +20,6 @@
           <option value="http://schema.cloudfoundry.org/spring/" />
           <option value="http://schemas.xmlsoap.org/" />
           <option value="http://tiles.apache.org/" />
-          <option value="http://waffy.xyz" />
           <option value="http://www.ibm.com/webservices/xsd" />
           <option value="http://www.jboss.com/xml/ns/" />
           <option value="http://www.jboss.org/j2ee/schema/" />

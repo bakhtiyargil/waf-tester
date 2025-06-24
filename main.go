@@ -8,7 +8,7 @@ import (
 	"time"
 	"waf-tester/client"
 	"waf-tester/config"
-	"waf-tester/domain"
+	"waf-tester/model"
 )
 
 func main() {
@@ -36,7 +36,7 @@ func main() {
 	wafCounter := make(chan int, len(lines))
 	var cc client.Client
 
-	target := domain.GetTestTargetInstance()
+	target := model.GetTestTargetInstance()
 	start := time.Now()
 	for _, line := range lines {
 		limiter <- struct{}{}

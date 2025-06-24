@@ -5,6 +5,3 @@ server:
     WriteTimeout: 10
     IdleTimeout: 120
     MaxHeaderBytes: 1048576
-
-logger:
-  level: info

@@ -39,6 +39,5 @@ func (c *Config) LoadConfig(file string) *Config {
 	if err != nil {
 		log.Fatalf("error while parsing file %s, %v", file, err)
 	}
-
 	return c
 }

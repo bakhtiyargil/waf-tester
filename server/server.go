@@ -24,8 +24,9 @@ func NewServer(cfg *config.Config) *Server {
 func (s *Server) Start() error {
 	server := &http.Server{
 		Addr:           s.cfg.Server.Default.Port,
-		ReadTimeout:    time.Second * s.cfg.Server.Default.ReadTimeout,
-		WriteTimeout:   time.Second * s.cfg.Server.Default.WriteTimeout,
+		ReadTimeout:    s.cfg.Server.Default.ReadTimeout * time.Second,
+		WriteTimeout:   s.cfg.Server.Default.WriteTimeout * time.Second,
+		IdleTimeout:    s.cfg.Server.Default.IdleTimeout * time.Second,
 		MaxHeaderBytes: s.cfg.Server.Default.MaxHeaderBytes,
 	}
 
@@ -35,8 +36,9 @@ func (s *Server) Start() error {
 			log.Fatalf("Error starting server: %v", err)
 		}
 	}()
+	s.AppendMiddlewareHandlers(s.echo)
+	s.AppendRouteHandlers(s.echo)
 
-	//add handler
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
