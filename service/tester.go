@@ -3,7 +3,9 @@ package service
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 	"waf-tester/client"
@@ -18,19 +20,40 @@ func NewTesterService(client *client.Client) *TesterService {
 	return &TesterService{client: client}
 }
 
+/*
+1. refactor
+*/
 func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (*model.Result, error) {
-	//loading sample file
-	file, _ := os.Open("./data/sample.txt")
-	defer file.Close()
+	result := &model.Result{}
+	filepath.Walk("./data", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 
-	//reading sample texts
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		lines = append(lines, line)
-	}
+		if !info.IsDir() {
+			file, _ := os.Open(path)
+			defer file.Close()
 
+			var lines []string
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := scanner.Text()
+				lines = append(lines, line)
+			}
+			totalReq, blockedReq, err := t.makeConcurrentRequest(lines, testRequest)
+			result.BlockedRequests = result.BlockedRequests + blockedReq
+			result.TotalRequests = result.TotalRequests + totalReq
+			if err != nil {
+				log.Printf("Error reading file %s: %v", path, err)
+				return nil
+			}
+		}
+		return nil
+	})
+	return result, nil
+}
+
+func (t *TesterService) makeConcurrentRequest(lines []string, testRequest *model.TestRequest) (totalRequest int, blockedRequest int, e error) {
 	//making requests concurrently
 	maxConcurrency := 64
 	limiter := make(chan struct{}, maxConcurrency)
@@ -64,11 +87,11 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (*mod
 	}()
 	end := time.Now()
 
-	var i int
 	for range wafCounter {
-		i++
+		blockedRequest++
 	}
+	totalRequest += len(lines)
 
 	fmt.Println("Time elapsed: ", end.Sub(start))
-	return &model.Result{TotalRequests: len(lines), BlockedRequests: i}, nil
+	return totalRequest, blockedRequest, nil
 }

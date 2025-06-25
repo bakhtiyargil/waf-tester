@@ -50,6 +50,7 @@ func mapBaseRouteHandlers(base *echo.Group) {
 		if err := c.Bind(requestBody); err != nil {
 			log.Panicf("error binding request body %v", err)
 		}
+		//separate handlers mappers and service (DI)
 		svc := service.NewTesterService(&client.Client{})
 		result, err := svc.StartInjectionTest(requestBody)
 		if err != nil {
