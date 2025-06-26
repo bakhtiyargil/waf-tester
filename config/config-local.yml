@@ -1,6 +1,6 @@
 server:
   default:
-    Port: :8088
+    Port: 8088
     ReadTimeout: 10
     WriteTimeout: 10
     IdleTimeout: 120

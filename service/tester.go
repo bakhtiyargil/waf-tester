@@ -3,7 +3,6 @@ package service
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -21,52 +20,64 @@ func NewTesterService(client *client.Client) *TesterService {
 }
 
 /*
-1. refactor
+create chunk based parallel tasks and execute
 */
 func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (*model.Result, error) {
-	result := &model.Result{}
-	filepath.Walk("./data", func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !info.IsDir() {
-			file, _ := os.Open(path)
-			defer file.Close()
-
-			var lines []string
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := scanner.Text()
-				lines = append(lines, line)
-			}
-			totalReq, blockedReq, err := t.makeConcurrentRequest(lines, testRequest)
-			result.BlockedRequests = result.BlockedRequests + blockedReq
-			result.TotalRequests = result.TotalRequests + totalReq
-			if err != nil {
-				log.Printf("Error reading file %s: %v", path, err)
-				return nil
-			}
-		}
-		return nil
-	})
-	return result, nil
-}
-
-func (t *TesterService) makeConcurrentRequest(lines []string, testRequest *model.TestRequest) (totalRequest int, blockedRequest int, e error) {
-	//making requests concurrently
-	maxConcurrency := 64
-	limiter := make(chan struct{}, maxConcurrency)
-	var wg sync.WaitGroup
-	wafCounter := make(chan int, len(lines))
-
 	target := model.Target{
 		Host:   testRequest.Host,
 		Path:   testRequest.Path,
 		Method: testRequest.Method,
 	}
+	result := &model.Result{}
+
+	err := filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return fmt.Errorf("error walking to file %s: %w", path, walkErr)
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("failed to open file %s: %w", path, err)
+		}
+		defer file.Close()
+
+		var lines []string
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("scanner error on file %s: %w", path, err)
+		}
+
+		total, blocked, err := t.makeConcurrentTest(lines, &target)
+		if err != nil {
+			return fmt.Errorf("concurrent test failed for file %s: %w", path, err)
+		}
+
+		result.BlockedRequests += blocked
+		result.TotalRequests += total
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("injection test failed: %w", err)
+	}
+	return result, nil
+}
+
+func (t *TesterService) makeConcurrentTest(paths []string, target *model.Target) (total int, blocked int, e error) {
+	maxConcurrency := 128
+	pathsLen := len(paths)
+	limiter := make(chan struct{}, maxConcurrency)
+	wafBlock := make(chan int, pathsLen)
+
+	var wg sync.WaitGroup
 	start := time.Now()
-	for _, line := range lines {
+	for _, line := range paths {
 		limiter <- struct{}{}
 		wg.Add(1)
 		go func(line string) {
@@ -76,22 +87,22 @@ func (t *TesterService) makeConcurrentRequest(lines []string, testRequest *model
 			}()
 			_, statusCode, _ := t.client.DoRequestWithoutBody(target.Method, target.GetUrl()+"/"+line)
 			if statusCode == 403 {
-				wafCounter <- 1
+				wafBlock <- 1
 			}
 		}(line)
 	}
 
 	go func() {
 		wg.Wait()
-		close(wafCounter)
+		close(wafBlock)
 	}()
 	end := time.Now()
 
-	for range wafCounter {
-		blockedRequest++
+	for range wafBlock {
+		blocked++
 	}
-	totalRequest += len(lines)
+	total += pathsLen
 
-	fmt.Println("Time elapsed: ", end.Sub(start))
-	return totalRequest, blockedRequest, nil
+	fmt.Println("time elapsed: ", end.Sub(start))
+	return total, blocked, nil
 }

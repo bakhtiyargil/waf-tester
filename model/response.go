@@ -10,3 +10,7 @@ type Response struct {
 func SuccessResponse() *Response {
 	return &Response{Message: "success", Status: http.StatusOK}
 }
+
+func ErrorResponse() *Response {
+	return &Response{Message: "unexpected internal error", Status: http.StatusInternalServerError}
+}

@@ -23,7 +23,7 @@ func NewServer(cfg *config.Config) *Server {
 
 func (s *Server) Start() error {
 	server := &http.Server{
-		Addr:           s.cfg.Server.Default.Port,
+		Addr:           ":" + s.cfg.Server.Default.Port,
 		ReadTimeout:    s.cfg.Server.Default.ReadTimeout * time.Second,
 		WriteTimeout:   s.cfg.Server.Default.WriteTimeout * time.Second,
 		IdleTimeout:    s.cfg.Server.Default.IdleTimeout * time.Second,
@@ -31,7 +31,7 @@ func (s *Server) Start() error {
 	}
 
 	go func() {
-		log.Println("Server is starting at http://localhost" + s.cfg.Server.Default.Port)
+		log.Println("Server is starting at http://localhost:" + s.cfg.Server.Default.Port)
 		if err := s.echo.StartServer(server); err != nil {
 			log.Fatalf("Error starting server: %v", err)
 		}

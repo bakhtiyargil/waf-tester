@@ -54,7 +54,9 @@ func mapBaseRouteHandlers(base *echo.Group) {
 		svc := service.NewTesterService(&client.Client{})
 		result, err := svc.StartInjectionTest(requestBody)
 		if err != nil {
-			log.Panicf("error while starting test %v", err)
+			log.Printf("unexpected internal error: %v", err)
+			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
+
 		}
 		return c.JSON(http.StatusOK, result)
 	})
