@@ -21,9 +21,9 @@ func NewServer(cfg *config.Config) *Server {
 	return &Server{echo: echo.New(), cfg: cfg}
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start() {
 	server := &http.Server{
-		Addr:           s.cfg.Server.Default.Port,
+		Addr:           ":" + s.cfg.Server.Default.Port,
 		ReadTimeout:    s.cfg.Server.Default.ReadTimeout * time.Second,
 		WriteTimeout:   s.cfg.Server.Default.WriteTimeout * time.Second,
 		IdleTimeout:    s.cfg.Server.Default.IdleTimeout * time.Second,
@@ -31,9 +31,9 @@ func (s *Server) Start() error {
 	}
 
 	go func() {
-		log.Println("Server is starting at http://localhost" + s.cfg.Server.Default.Port)
+		log.Println("server is starting at http://localhost:" + s.cfg.Server.Default.Port)
 		if err := s.echo.StartServer(server); err != nil {
-			log.Fatalf("Error starting server: %v", err)
+			log.Fatalf("error starting server: %v", err)
 		}
 	}()
 	s.AppendMiddlewareHandlers(s.echo)
@@ -46,6 +46,9 @@ func (s *Server) Start() error {
 	ctx, shutdown := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdown()
 
-	log.Println("Server exited properly")
-	return s.echo.Server.Shutdown(ctx)
+	log.Println("server exited properly")
+	err := s.echo.Server.Shutdown(ctx)
+	if err != nil {
+		log.Fatalf("error shutting down server: %v", err)
+	}
 }

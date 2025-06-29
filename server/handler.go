@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"log"
 	"net/http"
+	"waf-tester/client"
 	"waf-tester/model"
 	"waf-tester/service"
 )
@@ -31,28 +32,32 @@ func (s *Server) AppendMiddlewareHandlers(e *echo.Echo) {
 
 func (s *Server) AppendRouteHandlers(e *echo.Echo) {
 	base := e.Group("/test")
-	MapBaseRouteHandlers(base)
+	mapBaseRouteHandlers(base)
 
 	health := base.Group("/health")
-	MapHealthRouteHandlers(health)
+	mapHealthRouteHandlers(health)
 }
 
-func MapHealthRouteHandlers(health *echo.Group) {
+func mapHealthRouteHandlers(health *echo.Group) {
 	health.GET("", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, model.SuccessResponse())
 	})
 }
 
-func MapBaseRouteHandlers(base *echo.Group) {
-	base.POST("/", func(c echo.Context) error {
+func mapBaseRouteHandlers(base *echo.Group) {
+	base.POST("", func(c echo.Context) error {
 		requestBody := new(model.TestRequest)
 		if err := c.Bind(requestBody); err != nil {
 			log.Panicf("error binding request body %v", err)
 		}
-		err := service.StartInjectionTest(requestBody)
+		//separate handlers mappers and service (DI)
+		svc := service.NewTesterService(&client.Client{})
+		result, err := svc.StartInjectionTest(requestBody)
 		if err != nil {
-			log.Panicf("error while starting test %v", err)
+			log.Printf("unexpected internal error: %v", err)
+			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
+
 		}
-		return nil
+		return c.JSON(http.StatusOK, result)
 	})
 }
