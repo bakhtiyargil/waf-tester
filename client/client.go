@@ -6,14 +6,23 @@ import (
 	"strings"
 )
 
-const (
-	HeaderContentType = "Content-Type"
-)
+const HeaderContentType = "Content-Type"
 
-type Client struct{}
+type Client struct {
+	httpClient *http.Client
+	bodyReader io.Reader
+}
 
-func (cc *Client) DoRequestWithoutBody(method, url string) (respBody []byte, statusCode int, err error) {
-	resp, err := doRequest(method, url, "")
+func NewClient() *Client {
+	httpClient := http.DefaultClient
+	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return &Client{httpClient: httpClient}
+}
+
+func (c *Client) DoRequestWithoutBody(method, url string) (respBody []byte, statusCode int, err error) {
+	resp, err := c.doRequest(method, url, "")
 	if err != nil {
 		return nil, 0, err
 	}
@@ -23,30 +32,21 @@ func (cc *Client) DoRequestWithoutBody(method, url string) (respBody []byte, sta
 			err = closeErr
 		}
 	}()
-
 	body, err := io.ReadAll(resp.Body)
 	return body, resp.StatusCode, err
 }
 
-func doRequest(method, url, requestBody string) (*http.Response, error) {
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-
-	var bodyReader io.Reader
+func (c *Client) doRequest(method, url, requestBody string) (*http.Response, error) {
 	if requestBody != "" {
-		bodyReader = strings.NewReader(requestBody)
+		c.bodyReader = strings.NewReader(requestBody)
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequest(method, url, c.bodyReader)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add(HeaderContentType, "application/json")
-	resp, err := client.Do(req)
-
+	resp, err := c.httpClient.Do(req)
 	return resp, err
 }

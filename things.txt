@@ -1,5 +1,0 @@
-For future:
-1. If configurations(yml, conf, env) for the project becomes more complex use:
-    github.com/spf13/viper instead of gopkg.in/yaml.v2
-2. If the performance won't be the case use:
-    Resty client instead of built-in GoLang http package

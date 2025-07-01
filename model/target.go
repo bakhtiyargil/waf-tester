@@ -1,13 +1,18 @@
 package model
 
-import (
-	"strings"
+import "strings"
+
+const (
+	TextToSearch = iota
+	HttpStatus
 )
 
 type Target struct {
-	Host   string
-	Path   string
-	Method string
+	Host     string
+	Path     string
+	Method   string
+	Payload  string
+	Criteria map[int8]string
 }
 
 var testTarget *Target
@@ -29,4 +34,17 @@ func GetTestTargetInstance() *Target {
 			Method: "GET",
 		}
 	}
+}
+
+func FromRequest(request *TestRequest) *Target {
+	target := Target{
+		Host:   request.Host,
+		Path:   request.Path,
+		Method: request.Method,
+		Criteria: map[int8]string{
+			TextToSearch: request.Criteria.TextToSearch,
+			HttpStatus:   request.Criteria.HttpStatus,
+		},
+	}
+	return &target
 }

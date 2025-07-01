@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"log"
 	"net/http"
 	"waf-tester/client"
@@ -10,54 +9,32 @@ import (
 	"waf-tester/service"
 )
 
-func (s *Server) AppendMiddlewareHandlers(e *echo.Echo) {
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowHeaders: []string{
-			echo.HeaderOrigin,
-			echo.HeaderContentType,
-			echo.HeaderAccept,
-			echo.HeaderXRequestID},
-	}))
-	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
-		StackSize:         1 << 10,
-		DisablePrintStack: true,
-		DisableStackAll:   true,
-	}))
-	e.Use(middleware.RequestID())
-	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{Level: 5}))
-	e.Use(middleware.Secure())
-	e.Use(middleware.BodyLimit("2M"))
+type Handler struct {
+	service *service.TesterService
 }
 
-func (s *Server) AppendRouteHandlers(e *echo.Echo) {
-	base := e.Group("/test")
-	mapBaseRouteHandlers(base)
-
-	health := base.Group("/health")
-	mapHealthRouteHandlers(health)
+func NewHandler() *Handler {
+	return &Handler{service: service.NewTesterService(client.NewClient())}
 }
 
-func mapHealthRouteHandlers(health *echo.Group) {
+func (h *Handler) mapHealthRouteHandlers(health *echo.Group) {
 	health.GET("", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, model.SuccessResponse())
 	})
 }
 
-func mapBaseRouteHandlers(base *echo.Group) {
+func (h *Handler) mapBaseRouteHandlers(base *echo.Group) {
 	base.POST("", func(c echo.Context) error {
 		requestBody := new(model.TestRequest)
 		if err := c.Bind(requestBody); err != nil {
 			log.Panicf("error binding request body %v", err)
 		}
-		//separate handlers mappers and service (DI)
-		svc := service.NewTesterService(&client.Client{})
-		result, err := svc.StartInjectionTest(requestBody)
+		err := h.service.StartInjectionTest(requestBody)
 		if err != nil {
 			log.Printf("unexpected internal error: %v", err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
 
 		}
-		return c.JSON(http.StatusOK, result)
+		return c.JSON(http.StatusOK, model.SuccessResponse())
 	})
 }

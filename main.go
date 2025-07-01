@@ -9,6 +9,6 @@ func main() {
 	var c config.Config
 	c.LoadConfig("./config/config-local.yml")
 
-	srv := server.NewServer(&c)
+	srv := server.NewServer(&c, server.NewHandler())
 	srv.Start()
 }
