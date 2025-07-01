@@ -3,12 +3,16 @@ package main
 import (
 	"waf-tester/config"
 	"waf-tester/server"
+	"waf-tester/utility"
 )
 
 func main() {
 	var c config.Config
 	c.LoadConfig("./config/config-local.yml")
 
-	srv := server.NewServer(&c, server.NewHandler())
+	wp := utility.NewWorkerPool(20)
+	wp.Start()
+
+	srv := server.NewServer(&c, server.NewHandler(wp))
 	srv.Start()
 }

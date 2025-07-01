@@ -15,12 +15,11 @@ type TesterService struct {
 	wp     utility.Worker
 }
 
-func NewTesterService(client *client.Client) *TesterService {
-	return &TesterService{client: client, wp: utility.NewWorkerPool(20)}
+func NewTesterService(client *client.Client, wp utility.Worker) *TesterService {
+	return &TesterService{client: client, wp: wp}
 }
 
 func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error {
-	t.wp.Start()
 	err := filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return fmt.Errorf("error walking to file %s: %w", path, walkErr)
