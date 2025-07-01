@@ -52,7 +52,10 @@ func mapBaseRouteHandlers(base *echo.Group) {
 			log.Panicf("error binding request body %v", err)
 		}
 		//separate handlers mappers and service (DI)
-		svc := service.NewTesterService(&client.Client{}, &utility.WorkerPool{NumWorkers: 20})
+		svc := service.NewTesterService(
+			client.NewClient(&http.Client{}),
+			&utility.WorkerPool{NumWorkers: 20},
+		)
 		err := svc.StartInjectionTest(requestBody)
 		if err != nil {
 			log.Printf("unexpected internal error: %v", err)

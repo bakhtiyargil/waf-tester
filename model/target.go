@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	TEXT_TO_SEARCH = iota
-	HTTP_STATUS
+	TextToSearch = iota
+	HttpStatus
 )
 
 type Target struct {
@@ -44,8 +44,8 @@ func FromRequest(request *TestRequest) *Target {
 		Path:   request.Path,
 		Method: request.Method,
 		Criteria: map[int8]string{
-			TEXT_TO_SEARCH: request.Criteria.TextToSearch,
-			HTTP_STATUS:    request.Criteria.HttpStatus,
+			TextToSearch: request.Criteria.TextToSearch,
+			HttpStatus:   request.Criteria.HttpStatus,
 		},
 	}
 	return &target
