@@ -8,6 +8,7 @@ import (
 	"waf-tester/client"
 	"waf-tester/model"
 	"waf-tester/service"
+	"waf-tester/utility"
 )
 
 func (s *Server) AppendMiddlewareHandlers(e *echo.Echo) {
@@ -51,13 +52,13 @@ func mapBaseRouteHandlers(base *echo.Group) {
 			log.Panicf("error binding request body %v", err)
 		}
 		//separate handlers mappers and service (DI)
-		svc := service.NewTesterService(&client.Client{})
-		result, err := svc.StartInjectionTest(requestBody)
+		svc := service.NewTesterService(&client.Client{}, &utility.WorkerPool{NumWorkers: 20})
+		err := svc.StartInjectionTest(requestBody)
 		if err != nil {
 			log.Printf("unexpected internal error: %v", err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
 
 		}
-		return c.JSON(http.StatusOK, result)
+		return c.JSON(http.StatusOK, model.SuccessResponse())
 	})
 }
