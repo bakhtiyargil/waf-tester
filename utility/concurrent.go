@@ -16,10 +16,14 @@ type WorkerPool struct {
 	stopChan   chan struct{}
 	wg         sync.WaitGroup
 	running    bool
+	cond       *sync.Cond
 }
 
 func NewWorkerPool(workers int) *WorkerPool {
-	return &WorkerPool{numWorkers: workers}
+	return &WorkerPool{
+		numWorkers: workers,
+		cond:       sync.NewCond(&sync.Mutex{}),
+	}
 }
 
 func (wp *WorkerPool) Start() {
@@ -35,10 +39,13 @@ func (wp *WorkerPool) Start() {
 				case <-wp.stopChan:
 					return
 				default:
-					task := wp.taskQ.Dequeue()
-					if task != nil && task.routine != nil {
-						task.routine(task.staticParam, task.param)
+					wp.cond.L.Lock()
+					for wp.taskQ.IsEmpty() {
+						wp.cond.Wait()
 					}
+					wp.cond.L.Unlock()
+					task := wp.taskQ.Dequeue()
+					task.routine(task.staticParam, task.param)
 				}
 			}
 		}()
@@ -46,12 +53,13 @@ func (wp *WorkerPool) Start() {
 	wp.running = true
 }
 
-// when to stop this, refactor all
 func (wp *WorkerPool) Stop() {
+	wp.cond.Broadcast()
 	close(wp.stopChan)
 	wp.wg.Wait()
 }
 
 func (wp *WorkerPool) Submit(t *Task) {
+	wp.cond.Signal()
 	wp.taskQ.Enqueue(t)
 }

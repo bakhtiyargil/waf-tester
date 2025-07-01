@@ -70,3 +70,7 @@ func (taskQ *TaskQueue) Dequeue() (eldest *Task) {
 func (taskQ *TaskQueue) GetSize() int {
 	return taskQ.size
 }
+
+func (taskQ *TaskQueue) IsEmpty() bool {
+	return taskQ.size == 0
+}
