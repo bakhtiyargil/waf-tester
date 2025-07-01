@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-type RoutineFunction func(paramStatic interface{}, param interface{}) error
+type RoutineFunction func(paramStatic interface{}, param interface{})
 
 type Task struct {
 	param       interface{}

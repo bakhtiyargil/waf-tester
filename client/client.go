@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-const (
-	HeaderContentType = "Content-Type"
-)
+const HeaderContentType = "Content-Type"
 
 type Client struct {
 	httpClient *http.Client
+	bodyReader io.Reader
 }
 
-func NewClient(httpClient *http.Client) *Client {
+func NewClient() *Client {
+	httpClient := http.DefaultClient
 	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
@@ -32,24 +32,21 @@ func (c *Client) DoRequestWithoutBody(method, url string) (respBody []byte, stat
 			err = closeErr
 		}
 	}()
-
 	body, err := io.ReadAll(resp.Body)
 	return body, resp.StatusCode, err
 }
 
 func (c *Client) doRequest(method, url, requestBody string) (*http.Response, error) {
-	var bodyReader io.Reader
 	if requestBody != "" {
-		bodyReader = strings.NewReader(requestBody)
+		c.bodyReader = strings.NewReader(requestBody)
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequest(method, url, c.bodyReader)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add(HeaderContentType, "application/json")
 	resp, err := c.httpClient.Do(req)
-
 	return resp, err
 }

@@ -15,13 +15,12 @@ type TesterService struct {
 	wp     utility.Worker
 }
 
-func NewTesterService(client *client.Client, pool *utility.WorkerPool) *TesterService {
-	return &TesterService{client: client, wp: pool}
+func NewTesterService(client *client.Client) *TesterService {
+	return &TesterService{client: client, wp: utility.NewWorkerPool(20)}
 }
 
 func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error {
 	t.wp.Start()
-
 	err := filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return fmt.Errorf("error walking to file %s: %w", path, walkErr)
@@ -54,23 +53,25 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error
 	return nil
 }
 
-func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) error {
+func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) {
 	prs := paramStatic.(*model.Target)
 	pr := param.(string)
 	body, i, err := t.client.DoRequestWithoutBody(prs.Method, prs.GetUrl()+pr)
 	if err != nil {
-		return fmt.Errorf("failed to do request: %w", err)
+		fmt.Printf("failed to do request: %s", err)
+		return
 	}
 	if i != 403 {
 		file, err := os.OpenFile("output.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return fmt.Errorf("failed to open file: %w", err)
+			fmt.Printf("failed to open file: %s", err)
+			return
 		}
 		defer file.Close()
 
 		if _, err := file.WriteString(prs.GetUrl() + pr + "\n" + string(body) + "\n"); err != nil {
-			return fmt.Errorf("failed to write to file: %w", err)
+			fmt.Printf("failed to write to file: %s", err)
+			return
 		}
 	}
-	return nil
 }

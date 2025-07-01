@@ -11,18 +11,22 @@ type Worker interface {
 }
 
 type WorkerPool struct {
-	NumWorkers int
+	numWorkers int
 	taskQ      TaskQueue
 	stopChan   chan struct{}
 	wg         sync.WaitGroup
 	running    bool
 }
 
+func NewWorkerPool(workers int) *WorkerPool {
+	return &WorkerPool{numWorkers: workers}
+}
+
 func (wp *WorkerPool) Start() {
 	if wp.running {
 		return
 	}
-	for i := 0; i < wp.NumWorkers; i++ {
+	for i := 0; i < wp.numWorkers; i++ {
 		wp.wg.Add(1)
 		go func() {
 			defer wp.wg.Done()
