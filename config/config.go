@@ -10,10 +10,15 @@ import (
 
 type Config struct {
 	Server ServerConfig
+	Logger AppLogger
 }
 
 type ServerConfig struct {
 	Default DefaultServerConfig
+}
+
+type AppLogger struct {
+	Level string
 }
 
 type DefaultServerConfig struct {
