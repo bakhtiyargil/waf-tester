@@ -10,7 +10,7 @@ func main() {
 	var c config.Config
 	c.LoadConfig("./config/config-local.yml")
 
-	wp := utility.NewWorkerPool(20)
+	wp := utility.NewWorkerPool(128)
 	wp.Start()
 
 	srv := server.NewServer(&c, server.NewHandler(wp))
