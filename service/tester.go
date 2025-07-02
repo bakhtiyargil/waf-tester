@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"waf-tester/client"
 	"waf-tester/model"
 	"waf-tester/utility"
@@ -64,22 +66,24 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error
 func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) {
 	prs := paramStatic.(*model.Target)
 	escPr := url.PathEscape(param.(string))
-	body, i, err := t.client.DoRequestWithoutBody(prs.Method, prs.GetUrl()+"/"+escPr)
+	body, httpStatus, err := t.client.DoRequestWithoutBody(prs.Method, prs.GetUrl()+"/"+escPr)
 	if err != nil {
 		fmt.Printf("failed to do request: %s", err)
 		return
 	}
-	if i != 403 {
-		file, err := os.OpenFile("output.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			fmt.Printf("failed to open file: %s", err)
-			return
-		}
-		defer file.Close()
+	if strconv.Itoa(httpStatus) != prs.Criteria[1] {
+		if !strings.Contains(string(body), prs.Criteria[0]) {
+			file, err := os.OpenFile("output.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				fmt.Printf("failed to open file: %s", err)
+				return
+			}
+			defer file.Close()
 
-		if _, err := file.WriteString(prs.GetUrl() + "/" + escPr + "\n" + string(body) + "\n"); err != nil {
-			fmt.Printf("failed to write to file: %s", err)
-			return
+			if _, err := file.WriteString(prs.GetUrl() + "/" + escPr + "\n" + string(body) + "\n"); err != nil {
+				fmt.Printf("failed to write to file: %s", err)
+				return
+			}
 		}
 	}
 }
