@@ -60,6 +60,6 @@ func (wp *WorkerPool) Stop() {
 }
 
 func (wp *WorkerPool) Submit(t *Task) {
-	wp.cond.Signal()
 	wp.taskQ.Enqueue(t)
+	wp.cond.Signal()
 }

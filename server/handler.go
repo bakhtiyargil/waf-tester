@@ -2,9 +2,9 @@ package server
 
 import (
 	"github.com/labstack/echo/v4"
-	"log"
 	"net/http"
 	"waf-tester/client"
+	"waf-tester/logger"
 	"waf-tester/model"
 	"waf-tester/service"
 	"waf-tester/utility"
@@ -12,10 +12,14 @@ import (
 
 type Handler struct {
 	service *service.TesterService
+	logger  *logger.AppLogger
 }
 
-func NewHandler(wp utility.Worker) *Handler {
-	return &Handler{service: service.NewTesterService(client.NewClient(), wp)}
+func NewHandler(wp utility.Worker, logger *logger.AppLogger) *Handler {
+	return &Handler{
+		service: service.NewTesterService(client.NewClient(), wp, logger),
+		logger:  logger,
+	}
 }
 
 func (h *Handler) mapHealthRouteHandlers(health *echo.Group) {
@@ -28,11 +32,11 @@ func (h *Handler) mapBaseRouteHandlers(base *echo.Group) {
 	base.POST("", func(c echo.Context) error {
 		requestBody := new(model.TestRequest)
 		if err := c.Bind(requestBody); err != nil {
-			log.Panicf("error binding request body %v", err)
+			h.logger.Error(err)
 		}
 		err := h.service.StartInjectionTest(requestBody)
 		if err != nil {
-			log.Printf("unexpected internal error: %v", err)
+			h.logger.Error(err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
 
 		}

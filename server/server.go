@@ -33,7 +33,7 @@ func (s *Server) Start() {
 	}
 
 	go func() {
-		log.Println("server is starting at http://localhost:" + s.cfg.Server.Default.Port)
+		s.handler.logger.Infof("Starting server on port %s", s.cfg.Server.Default.Port)
 		if err := s.echo.StartServer(server); err != nil {
 			log.Fatalf("error starting server: %v", err)
 		}
@@ -48,10 +48,11 @@ func (s *Server) Start() {
 	ctx, shutdown := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdown()
 
-	log.Println("server exited properly")
+	s.handler.logger.Infof("Shutting down server")
 	err := s.echo.Server.Shutdown(ctx)
 	if err != nil {
-		log.Fatalf("error shutting down server: %v", err)
+		s.handler.logger.Error(err)
+		return
 	}
 }
 
