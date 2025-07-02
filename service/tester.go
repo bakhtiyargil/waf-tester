@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"waf-tester/client"
@@ -32,6 +33,9 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error
 		if info.IsDir() {
 			return nil
 		}
+		if info.Name() != "payloads.txt" {
+			return nil
+		}
 
 		file, err := os.Open(path)
 		if err != nil {
@@ -59,8 +63,8 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error
 
 func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) {
 	prs := paramStatic.(*model.Target)
-	pr := param.(string)
-	body, i, err := t.client.DoRequestWithoutBody(prs.Method, prs.GetUrl()+pr)
+	escPr := url.PathEscape(param.(string))
+	body, i, err := t.client.DoRequestWithoutBody(prs.Method, prs.GetUrl()+"/"+escPr)
 	if err != nil {
 		fmt.Printf("failed to do request: %s", err)
 		return
@@ -73,7 +77,7 @@ func (t *TesterService) processMethod(paramStatic interface{}, param interface{}
 		}
 		defer file.Close()
 
-		if _, err := file.WriteString(prs.GetUrl() + pr + "\n" + string(body) + "\n"); err != nil {
+		if _, err := file.WriteString(prs.GetUrl() + "/" + escPr + "\n" + string(body) + "\n"); err != nil {
 			fmt.Printf("failed to write to file: %s", err)
 			return
 		}
