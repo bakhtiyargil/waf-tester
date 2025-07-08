@@ -35,8 +35,8 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
+		var routineFunc utility.RoutineFunction = t.processMethod
 		for scanner.Scan() {
-			var routineFunc utility.RoutineFunction = t.processMethod
 			task := utility.NewTask(scanner.Text(), model.FromRequest(testRequest), routineFunc)
 			t.wp.Submit(task)
 		}
