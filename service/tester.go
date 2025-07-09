@@ -2,6 +2,7 @@ package service
 
 import (
 	"bufio"
+	"github.com/google/uuid"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -15,20 +16,21 @@ import (
 
 type TesterService struct {
 	client *client.Client
-	wp     utility.Worker
 	logger *logger.AppLogger
 }
 
-func NewTesterService(client *client.Client, wp utility.Worker, logger *logger.AppLogger) *TesterService {
+func NewTesterService(client *client.Client, logger *logger.AppLogger) *TesterService {
 	return &TesterService{
 		client: client,
-		wp:     wp,
 		logger: logger,
 	}
 }
 
-func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error {
-	err := filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
+func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (id string, err error) {
+	id = uuid.New().String()
+	wp := utility.NewWorkerPoolExecutor(id, 128, t.logger)
+
+	err = filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return t.logger.ErrorR(walkErr)
 		}
@@ -49,18 +51,23 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error
 		var routineFunc utility.RoutineFunction = t.processMethod
 		for scanner.Scan() {
 			task := utility.NewTask(scanner.Text(), model.FromRequest(testRequest), routineFunc)
-			t.wp.Submit(task)
+			wp.Submit(task)
 		}
 		if err := scanner.Err(); err != nil {
 			return t.logger.ErrorR(err)
 		}
 		return nil
 	})
-
 	if err != nil {
-		return t.logger.ErrorR(err)
+		return "", t.logger.ErrorR(err)
 	}
-	return nil
+
+	wp.Start()
+	defer func() {
+		go wp.Finish()
+	}()
+
+	return id, nil
 }
 
 func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) {

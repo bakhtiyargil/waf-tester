@@ -7,7 +7,6 @@ import (
 	"waf-tester/logger"
 	"waf-tester/model"
 	"waf-tester/service"
-	"waf-tester/utility"
 )
 
 type Handler struct {
@@ -15,9 +14,9 @@ type Handler struct {
 	logger  *logger.AppLogger
 }
 
-func NewHandler(wp utility.Worker, logger *logger.AppLogger) *Handler {
+func NewHandler(logger *logger.AppLogger) *Handler {
 	return &Handler{
-		service: service.NewTesterService(client.NewClient(), wp, logger),
+		service: service.NewTesterService(client.NewClient(), logger),
 		logger:  logger,
 	}
 }
@@ -34,12 +33,12 @@ func (h *Handler) mapBaseRouteHandlers(base *echo.Group) {
 		if err := c.Bind(requestBody); err != nil {
 			h.logger.Error(err)
 		}
-		err := h.service.StartInjectionTest(requestBody)
+		id, err := h.service.StartInjectionTest(requestBody)
 		if err != nil {
 			h.logger.Error(err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
 
 		}
-		return c.JSON(http.StatusOK, model.SuccessResponse())
+		return c.JSON(http.StatusOK, model.SuccessResponseWithId(id))
 	})
 }
