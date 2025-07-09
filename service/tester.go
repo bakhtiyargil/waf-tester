@@ -19,7 +19,7 @@ func NewTesterService(client *client.Client) *TesterService {
 }
 
 func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error {
-	wp := utility.NewWorkerPool(128)
+	wp := utility.NewWorkerPoolExecutor(testRequest.Host, 128)
 	wp.Start()
 	defer func() {
 		go wp.Stop()

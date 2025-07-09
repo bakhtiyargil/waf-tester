@@ -4,33 +4,31 @@ import (
 	"sync"
 )
 
-type Worker interface {
+type Executor interface {
 	Submit(task *Task)
 	Start()
 	Stop()
 }
 
-type WorkerPool struct {
+type WorkerPoolExecutor struct {
+	id         string
 	numWorkers int
 	taskQ      TaskQueue
 	stopChan   chan struct{}
 	wg         sync.WaitGroup
-	running    bool
 	cond       *sync.Cond
 }
 
-func NewWorkerPool(workers int) *WorkerPool {
-	return &WorkerPool{
+func NewWorkerPoolExecutor(id string, workers int) *WorkerPoolExecutor {
+	return &WorkerPoolExecutor{
+		id:         id,
 		numWorkers: workers,
 		cond:       sync.NewCond(&sync.Mutex{}),
 		stopChan:   make(chan struct{}),
 	}
 }
 
-func (wp *WorkerPool) Start() {
-	if wp.running {
-		return
-	}
+func (wp *WorkerPoolExecutor) Start() {
 	for i := 0; i < wp.numWorkers; i++ {
 		wp.wg.Add(1)
 		go func() {
@@ -56,17 +54,15 @@ func (wp *WorkerPool) Start() {
 			}
 		}()
 	}
-	wp.running = true
 }
 
-func (wp *WorkerPool) Stop() {
+func (wp *WorkerPoolExecutor) Stop() {
 	close(wp.stopChan)
 	wp.cond.Broadcast()
 	wp.wg.Wait()
-	wp.running = false
 }
 
-func (wp *WorkerPool) Submit(t *Task) {
+func (wp *WorkerPoolExecutor) Submit(t *Task) {
 	wp.taskQ.Enqueue(t)
 	wp.cond.Signal()
 }
