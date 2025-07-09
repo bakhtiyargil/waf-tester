@@ -15,18 +15,14 @@ import (
 
 type TesterService struct {
 	client *client.Client
-	wp     utility.Worker
 	logger *logger.AppLogger
 }
 
-func NewTesterService(client *client.Client, wp utility.Worker, logger *logger.AppLogger) *TesterService {
+func NewTesterService(client *client.Client, logger *logger.AppLogger) *TesterService {
 	return &TesterService{
 		client: client,
-		wp:     wp,
 		logger: logger,
 	}
-func NewTesterService(client *client.Client) *TesterService {
-	return &TesterService{client: client}
 }
 
 func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error {

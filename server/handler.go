@@ -14,11 +14,9 @@ type Handler struct {
 	logger  *logger.AppLogger
 }
 
-func NewHandler() *Handler {
-	return &Handler{service: service.NewTesterService(client.NewClient())}
-func NewHandler(wp utility.Worker, logger *logger.AppLogger) *Handler {
+func NewHandler(logger *logger.AppLogger) *Handler {
 	return &Handler{
-		service: service.NewTesterService(client.NewClient(), wp, logger),
+		service: service.NewTesterService(client.NewClient(), logger),
 		logger:  logger,
 	}
 }

@@ -13,10 +13,6 @@ func main() {
 	lgr := logger.NewAppLogger(cnf)
 	lgr.InitLogger()
 
-	srv := server.NewServer(&c, server.NewHandler())
-	wp := utility.NewWorkerPool(128)
-	wp.Start()
-
-	srv := server.NewServer(cnf, server.NewHandler(wp, lgr))
+	srv := server.NewServer(cnf, server.NewHandler(lgr))
 	srv.Start()
 }
