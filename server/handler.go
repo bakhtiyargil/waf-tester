@@ -33,12 +33,12 @@ func (h *Handler) mapBaseRouteHandlers(base *echo.Group) {
 		if err := c.Bind(requestBody); err != nil {
 			h.logger.Error(err)
 		}
-		err := h.service.StartInjectionTest(requestBody)
+		id, err := h.service.StartInjectionTest(requestBody)
 		if err != nil {
 			h.logger.Error(err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
 
 		}
-		return c.JSON(http.StatusOK, model.SuccessResponse())
+		return c.JSON(http.StatusOK, model.SuccessResponseWithId(id))
 	})
 }
