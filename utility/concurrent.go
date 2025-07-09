@@ -23,6 +23,7 @@ func NewWorkerPool(workers int) *WorkerPool {
 	return &WorkerPool{
 		numWorkers: workers,
 		cond:       sync.NewCond(&sync.Mutex{}),
+		stopChan:   make(chan struct{}),
 	}
 }
 
@@ -41,6 +42,11 @@ func (wp *WorkerPool) Start() {
 				default:
 					wp.cond.L.Lock()
 					for wp.taskQ.IsEmpty() {
+						select {
+						case <-wp.stopChan:
+							return
+						default:
+						}
 						wp.cond.Wait()
 					}
 					wp.cond.L.Unlock()
@@ -54,9 +60,10 @@ func (wp *WorkerPool) Start() {
 }
 
 func (wp *WorkerPool) Stop() {
-	wp.cond.Broadcast()
 	close(wp.stopChan)
+	wp.cond.Broadcast()
 	wp.wg.Wait()
+	wp.running = false
 }
 
 func (wp *WorkerPool) Submit(t *Task) {

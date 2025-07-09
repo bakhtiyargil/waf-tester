@@ -7,15 +7,14 @@ import (
 	"waf-tester/client"
 	"waf-tester/model"
 	"waf-tester/service"
-	"waf-tester/utility"
 )
 
 type Handler struct {
 	service *service.TesterService
 }
 
-func NewHandler(wp utility.Worker) *Handler {
-	return &Handler{service: service.NewTesterService(client.NewClient(), wp)}
+func NewHandler() *Handler {
+	return &Handler{service: service.NewTesterService(client.NewClient())}
 }
 
 func (h *Handler) mapHealthRouteHandlers(health *echo.Group) {

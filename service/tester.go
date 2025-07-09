@@ -12,14 +12,19 @@ import (
 
 type TesterService struct {
 	client *client.Client
-	wp     utility.Worker
 }
 
-func NewTesterService(client *client.Client, wp utility.Worker) *TesterService {
-	return &TesterService{client: client, wp: wp}
+func NewTesterService(client *client.Client) *TesterService {
+	return &TesterService{client: client}
 }
 
 func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error {
+	wp := utility.NewWorkerPool(128)
+	wp.Start()
+	defer func() {
+		go wp.Stop()
+	}()
+
 	err := filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return fmt.Errorf("error walking to file %s: %w", path, walkErr)
@@ -38,7 +43,7 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) error
 		var routineFunc utility.RoutineFunction = t.processMethod
 		for scanner.Scan() {
 			task := utility.NewTask(scanner.Text(), model.FromRequest(testRequest), routineFunc)
-			t.wp.Submit(task)
+			wp.Submit(task)
 		}
 		if err := scanner.Err(); err != nil {
 			return fmt.Errorf("scanner error on file %s: %w", path, err)
