@@ -32,6 +32,9 @@ func NewWorkerPoolExecutor(id string, workers int, logger *logger.AppLogger) *Wo
 
 func (wp *WorkerPoolExecutor) Start() (poolKey string, err error) {
 	poolKey, err = wp.plContext.Add(wp)
+	if err != nil {
+		return "", err
+	}
 	wp.id = poolKey
 	wp.logger.Infof("starting worker pool executor [ID]: %s", poolKey)
 	for i := 0; i < wp.numWorkers; i++ {

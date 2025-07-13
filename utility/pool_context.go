@@ -15,20 +15,21 @@ type poolContext struct {
 
 func newSingleton() *poolContext {
 	if plContext == nil {
-		return &poolContext{
+		plContext = &poolContext{
 			holder: make(map[string]*WorkerPoolExecutor),
 		}
+		return plContext
 	}
 	return plContext
 }
 
 func (pc *poolContext) Add(value *WorkerPoolExecutor) (key string, err error) {
-	if pc.holder[key] != nil {
-		return "", errors.New("duplicated pool key: " + key)
-	}
 	h := sha256.New()
 	h.Write([]byte((value.id)))
 	key = hex.EncodeToString(h.Sum(nil))
+	if pc.holder[key] != nil {
+		return "", errors.New("duplicated pool key: " + key)
+	}
 	pc.holder[key] = value
 	return key, nil
 }
