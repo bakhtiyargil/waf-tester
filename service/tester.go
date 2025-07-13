@@ -2,7 +2,6 @@ package service
 
 import (
 	"bufio"
-	"github.com/google/uuid"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -26,10 +25,8 @@ func NewTesterService(client *client.Client, logger *logger.AppLogger) *TesterSe
 	}
 }
 
-func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (id string, err error) {
-	id = uuid.New().String()
-	wp := utility.NewWorkerPoolExecutor(id, 128, t.logger)
-
+func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (key string, err error) {
+	wp := utility.NewWorkerPoolExecutor(testRequest.GetApi(), 128, t.logger)
 	err = filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return t.logger.ErrorR(walkErr)
@@ -62,12 +59,15 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (id s
 		return "", t.logger.ErrorR(err)
 	}
 
-	wp.Start()
+	key, err = wp.Start()
+	if err != nil {
+		return "", t.logger.ErrorR(err)
+	}
 	defer func() {
 		go wp.Finish()
 	}()
 
-	return id, nil
+	return key, nil
 }
 
 func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) {
