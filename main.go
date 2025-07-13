@@ -13,6 +13,7 @@ func main() {
 	lgr := logger.NewAppLogger(cnf)
 	lgr.InitLogger()
 
+
 	srv := server.NewServer(cnf, server.NewHandler(lgr))
 	srv.Start()
 }
