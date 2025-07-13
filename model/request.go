@@ -11,3 +11,7 @@ type Criteria struct {
 	TextToSearch string `json:"textToSearch"`
 	HttpStatus   string `json:"httpStatus"`
 }
+
+func (testRequest *TestRequest) GetApi() string {
+	return testRequest.Host + testRequest.Path + testRequest.Method
+}
