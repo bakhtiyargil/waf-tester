@@ -6,7 +6,10 @@ import (
 	"errors"
 )
 
-var plContext *poolContext
+var PlContext = &poolContext{
+	limit:  16,
+	holder: make(map[string]*WorkerPoolExecutor),
+}
 
 type poolContext struct {
 	limit     int8
@@ -15,17 +18,17 @@ type poolContext struct {
 }
 
 func newSingleton() *poolContext {
-	if plContext == nil {
-		plContext = &poolContext{
+	if PlContext == nil {
+		PlContext = &poolContext{
 			limit:  16,
 			holder: make(map[string]*WorkerPoolExecutor),
 		}
-		return plContext
+		return PlContext
 	}
-	return plContext
+	return PlContext
 }
 
-func (pc *poolContext) Add(value *WorkerPoolExecutor) (key string, err error) {
+func (pc *poolContext) add(value *WorkerPoolExecutor) (key string, err error) {
 	if pc.checkLimit() {
 		return "", errors.New("work pool limit exceeded")
 	}
@@ -40,7 +43,7 @@ func (pc *poolContext) Add(value *WorkerPoolExecutor) (key string, err error) {
 	return key, nil
 }
 
-func (pc *poolContext) Remove(key string) {
+func (pc *poolContext) remove(key string) {
 	delete(pc.holder, key)
 }
 
@@ -49,4 +52,12 @@ func (pc *poolContext) checkLimit() bool {
 		return true
 	}
 	return false
+}
+
+func (pc *poolContext) Get(key string) (*WorkerPoolExecutor, error) {
+	var wp, ok = pc.holder[key]
+	if !ok {
+		return nil, errors.New("worker doesn't exist in the context with ID: " + key)
+	}
+	return wp, nil
 }
