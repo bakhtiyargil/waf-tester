@@ -18,7 +18,6 @@ type WorkerPoolExecutor struct {
 	taskQ      TaskQueue
 	wg         sync.WaitGroup
 	logger     *logger.AppLogger
-	plContext  *poolContext
 	terminate  chan struct{}
 }
 
@@ -27,13 +26,12 @@ func NewWorkerPoolExecutor(id string, workers int, logger *logger.AppLogger) *Wo
 		id:         id,
 		numWorkers: workers,
 		logger:     logger,
-		plContext:  newSingleton(),
 		terminate:  make(chan struct{}),
 	}
 }
 
 func (wp *WorkerPoolExecutor) Start() (poolKey string, err error) {
-	poolKey, err = wp.plContext.Add(wp)
+	poolKey, err = PlContext.add(wp)
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +62,7 @@ func (wp *WorkerPoolExecutor) Start() (poolKey string, err error) {
 
 func (wp *WorkerPoolExecutor) Finish() {
 	wp.wg.Wait()
-	wp.plContext.Remove(wp.id)
+	PlContext.remove(wp.id)
 	wp.logger.Infof("stopped worker pool executor [ID]: %s", wp.id)
 }
 
@@ -72,7 +70,6 @@ func (wp *WorkerPoolExecutor) Submit(t *Task) {
 	wp.taskQ.Enqueue(t)
 }
 
-// todo: implement logic
 func (wp *WorkerPoolExecutor) Terminate() error {
 	close(wp.terminate)
 	return nil
