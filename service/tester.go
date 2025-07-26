@@ -70,6 +70,18 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (key 
 	return key, nil
 }
 
+func (t *TesterService) TerminateInjectionTest(testId string) error {
+	var wp, err = utility.PlContext.Get(testId)
+	if err != nil {
+		return err
+	}
+	err = wp.Terminate()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) {
 	prs := paramStatic.(*model.Target)
 	escPr := url.PathEscape(param.(string))

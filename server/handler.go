@@ -28,7 +28,18 @@ func (h *Handler) mapHealthRouteHandlers(health *echo.Group) {
 }
 
 func (h *Handler) mapBaseRouteHandlers(base *echo.Group) {
-	base.POST("", func(c echo.Context) error {
+	base.DELETE("/:id/terminate", func(c echo.Context) error {
+		testId := c.Param("id")
+		err := h.service.TerminateInjectionTest(testId)
+		if err != nil {
+			h.logger.Error(err)
+			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
+
+		}
+		return c.JSON(http.StatusOK, model.SuccessResponseWithId(testId))
+	})
+
+	base.POST("/start", func(c echo.Context) error {
 		requestBody := new(model.TestRequest)
 		if err := c.Bind(requestBody); err != nil {
 			h.logger.Error(err)

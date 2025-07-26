@@ -77,7 +77,7 @@ func (s *Server) AppendMiddlewares(e *echo.Echo) {
 }
 
 func (s *Server) AppendRoutes(e *echo.Echo) {
-	base := e.Group("/test")
+	base := e.Group("/tests")
 	s.handler.mapBaseRouteHandlers(base)
 
 	health := base.Group("/health")
