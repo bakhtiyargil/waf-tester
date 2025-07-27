@@ -10,20 +10,31 @@ import (
 	"syscall"
 	"time"
 	"waf-tester/config"
+	"waf-tester/logger"
 )
 import "github.com/labstack/echo/v4"
 
-type Server struct {
+type Server interface {
+	Start()
+}
+
+type TesterServer struct {
 	echo    *echo.Echo
 	cfg     *config.Config
-	handler *Handler
+	handler Handler
+	logger  logger.Logger
 }
 
-func NewServer(cfg *config.Config, handler *Handler) *Server {
-	return &Server{echo: echo.New(), cfg: cfg, handler: handler}
+func NewServer(cfg *config.Config, handler Handler, logger logger.Logger) Server {
+	return &TesterServer{
+		echo:    echo.New(),
+		cfg:     cfg,
+		handler: handler,
+		logger:  logger,
+	}
 }
 
-func (s *Server) Start() {
+func (s *TesterServer) Start() {
 	server := &http.Server{
 		Addr:           ":" + s.cfg.Server.Default.Port,
 		ReadTimeout:    s.cfg.Server.Default.ReadTimeout * time.Second,
@@ -33,13 +44,13 @@ func (s *Server) Start() {
 	}
 
 	go func() {
-		s.handler.logger.Infof("starting server on port %s", s.cfg.Server.Default.Port)
+		s.logger.Infof("starting server on port %s", s.cfg.Server.Default.Port)
 		if err := s.echo.StartServer(server); err != nil {
 			log.Fatalf("error starting server: %v", err)
 		}
 	}()
-	s.AppendMiddlewares(s.echo)
-	s.AppendRoutes(s.echo)
+	s.appendMiddlewares(s.echo)
+	s.appendRoutes(s.echo)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
@@ -48,15 +59,15 @@ func (s *Server) Start() {
 	ctx, shutdown := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdown()
 
-	s.handler.logger.Info("shutting down server")
+	s.logger.Info("shutting down server")
 	err := s.echo.Server.Shutdown(ctx)
 	if err != nil {
-		s.handler.logger.Error(err)
+		s.logger.Error(err)
 		return
 	}
 }
 
-func (s *Server) AppendMiddlewares(e *echo.Echo) {
+func (s *TesterServer) appendMiddlewares(e *echo.Echo) {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{
@@ -76,7 +87,7 @@ func (s *Server) AppendMiddlewares(e *echo.Echo) {
 	e.Use(middleware.BodyLimit("2M"))
 }
 
-func (s *Server) AppendRoutes(e *echo.Echo) {
+func (s *TesterServer) appendRoutes(e *echo.Echo) {
 	base := e.Group("/tests")
 	s.handler.mapBaseRouteHandlers(base)
 

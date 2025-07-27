@@ -21,7 +21,7 @@ type WorkerPoolExecutor struct {
 	terminate  chan struct{}
 }
 
-func NewWorkerPoolExecutor(id string, workers int, logger logger.Logger) *WorkerPoolExecutor {
+func NewWorkerPoolExecutor(id string, workers int, logger logger.Logger) Executor {
 	return &WorkerPoolExecutor{
 		id:         id,
 		numWorkers: workers,

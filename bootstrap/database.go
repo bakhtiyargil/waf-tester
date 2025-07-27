@@ -9,7 +9,9 @@ import (
 )
 
 const (
-	DbScheme = "mongodb"
+	DbScheme        = "mongodb"
+	AuthSource      = "authSource"
+	AuthSourceValue = "admin"
 )
 
 func InitMongoDatabase() mongo.Client {
@@ -49,7 +51,7 @@ func buildURI(scheme, host, port, name, user, pass string) string {
 		Path:   "/" + name,
 	}
 	query := url.Values{}
-	query.Set("authSource", "admin")
+	query.Set(AuthSource, AuthSourceValue)
 	u.RawQuery = query.Encode()
 	return u.String()
 }

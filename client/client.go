@@ -6,22 +6,28 @@ import (
 	"strings"
 )
 
-const HeaderContentType = "Content-Type"
+const (
+	HeaderContentType = "Content-Type"
+)
 
-type Client struct {
+type Client interface {
+	DoRequestWithoutBody(method, url string) (respBody []byte, statusCode int, err error)
+}
+
+type PureHttpClient struct {
 	httpClient *http.Client
 	bodyReader io.Reader
 }
 
-func NewClient() *Client {
+func NewPureHttpClient() Client {
 	httpClient := http.DefaultClient
 	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
-	return &Client{httpClient: httpClient}
+	return &PureHttpClient{httpClient: httpClient}
 }
 
-func (c *Client) DoRequestWithoutBody(method, url string) (respBody []byte, statusCode int, err error) {
+func (c *PureHttpClient) DoRequestWithoutBody(method, url string) (respBody []byte, statusCode int, err error) {
 	resp, err := c.doRequest(method, url, "")
 	if err != nil {
 		return nil, 0, err
@@ -36,7 +42,7 @@ func (c *Client) DoRequestWithoutBody(method, url string) (respBody []byte, stat
 	return body, resp.StatusCode, err
 }
 
-func (c *Client) doRequest(method, url, requestBody string) (*http.Response, error) {
+func (c *PureHttpClient) doRequest(method, url, requestBody string) (*http.Response, error) {
 	if requestBody != "" {
 		c.bodyReader = strings.NewReader(requestBody)
 	}
