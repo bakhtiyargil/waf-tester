@@ -11,10 +11,10 @@ import (
 
 type Handler struct {
 	service *service.TesterService
-	logger  *logger.AppLogger
+	logger  logger.Logger
 }
 
-func NewHandler(logger *logger.AppLogger) *Handler {
+func NewHandler(logger logger.Logger) *Handler {
 	return &Handler{
 		service: service.NewTesterService(client.NewClient(), logger),
 		logger:  logger,
