@@ -11,8 +11,8 @@ logger:
 
 database:
   mongo:
-    host: test
-    port: test
-    name: test
-    username: test
-    password: test
+    host: localhost
+    port: 27017
+    name: waftester
+    username: {{ .MONGO_USER }}
+    password: {{ .MONGO_PASSWORD}}

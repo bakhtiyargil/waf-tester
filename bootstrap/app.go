@@ -3,6 +3,11 @@ package bootstrap
 import (
 	"waf-tester/config"
 	"waf-tester/logger"
+	"waf-tester/mongo"
+)
+
+const (
+	CfgFilePath = "./config/config-local.yml"
 )
 
 var (
@@ -12,6 +17,7 @@ var (
 type Application struct {
 	Config *config.Config
 	Logger logger.Logger
+	Mongo  mongo.Client
 }
 
 func init() {
@@ -20,6 +26,7 @@ func init() {
 
 func AppInit() {
 	App = &Application{}
-	App.Config = config.InitConfig("./config/config-local.yml")
-	App.Logger = logger.InitAppLogger(App.Config)
+	App.Config = InitConfig(CfgFilePath)
+	App.Logger = InitAppLogger()
+	App.Mongo = InitMongoDatabase()
 }
