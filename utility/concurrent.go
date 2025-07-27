@@ -17,11 +17,11 @@ type WorkerPoolExecutor struct {
 	numWorkers int
 	taskQ      TaskQueue
 	wg         sync.WaitGroup
-	logger     *logger.AppLogger
+	logger     logger.Logger
 	terminate  chan struct{}
 }
 
-func NewWorkerPoolExecutor(id string, workers int, logger *logger.AppLogger) *WorkerPoolExecutor {
+func NewWorkerPoolExecutor(id string, workers int, logger logger.Logger) *WorkerPoolExecutor {
 	return &WorkerPoolExecutor{
 		id:         id,
 		numWorkers: workers,
