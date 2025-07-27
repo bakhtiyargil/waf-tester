@@ -15,10 +15,10 @@ import (
 
 type TesterService struct {
 	client *client.Client
-	logger *logger.AppLogger
+	logger logger.Logger
 }
 
-func NewTesterService(client *client.Client, logger *logger.AppLogger) *TesterService {
+func NewTesterService(client *client.Client, logger logger.Logger) *TesterService {
 	return &TesterService{
 		client: client,
 		logger: logger,

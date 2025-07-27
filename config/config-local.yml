@@ -1,10 +1,18 @@
 server:
   default:
-    Port: 8088
-    ReadTimeout: 30
-    WriteTimeout: 30
-    IdleTimeout: 90
-    MaxHeaderBytes: 1048576
+    port: 8088
+    readTimeout: 30
+    writeTimeout: 30
+    idleTimeout: 90
+    maxHeaderBytes: 1048576
 
 logger:
   level: info
+
+database:
+  mongo:
+    host: localhost
+    port: 27017
+    name: waftester
+    username: {{ .MONGO_USER }}
+    password: {{ .MONGO_PASSWORD}}
