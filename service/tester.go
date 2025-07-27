@@ -13,19 +13,24 @@ import (
 	"waf-tester/utility"
 )
 
-type TesterService struct {
-	client *client.Client
+type Tester interface {
+	Start(testRequest *model.TestRequest) (testId string, err error)
+	Terminate(testId string) error
+}
+
+type InjectionTester struct {
+	client client.Client
 	logger logger.Logger
 }
 
-func NewTesterService(client *client.Client, logger logger.Logger) *TesterService {
-	return &TesterService{
+func NewInjectionTester(client client.Client, logger logger.Logger) Tester {
+	return &InjectionTester{
 		client: client,
 		logger: logger,
 	}
 }
 
-func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (key string, err error) {
+func (t *InjectionTester) Start(testRequest *model.TestRequest) (testId string, err error) {
 	wp := utility.NewWorkerPoolExecutor(testRequest.GetApi(), 128, t.logger)
 	err = filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
@@ -59,7 +64,7 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (key 
 		return "", t.logger.ErrorR(err)
 	}
 
-	key, err = wp.Start()
+	testId, err = wp.Start()
 	if err != nil {
 		return "", t.logger.ErrorR(err)
 	}
@@ -67,10 +72,10 @@ func (t *TesterService) StartInjectionTest(testRequest *model.TestRequest) (key 
 		go wp.Finish()
 	}()
 
-	return key, nil
+	return testId, nil
 }
 
-func (t *TesterService) TerminateInjectionTest(testId string) error {
+func (t *InjectionTester) Terminate(testId string) error {
 	var wp, err = utility.PlContext.Get(testId)
 	if err != nil {
 		return err
@@ -82,7 +87,7 @@ func (t *TesterService) TerminateInjectionTest(testId string) error {
 	return nil
 }
 
-func (t *TesterService) processMethod(paramStatic interface{}, param interface{}) {
+func (t *InjectionTester) processMethod(paramStatic interface{}, param interface{}) {
 	prs := paramStatic.(*model.Target)
 	escPr := url.PathEscape(param.(string))
 	body, httpStatus, err := t.client.DoRequestWithoutBody(prs.Method, prs.GetUrl()+"/"+escPr)

@@ -3,34 +3,38 @@ package server
 import (
 	"github.com/labstack/echo/v4"
 	"net/http"
-	"waf-tester/client"
 	"waf-tester/logger"
 	"waf-tester/model"
 	"waf-tester/service"
 )
 
-type Handler struct {
-	service *service.TesterService
-	logger  logger.Logger
+type Handler interface {
+	mapHealthRouteHandlers(health *echo.Group)
+	mapBaseRouteHandlers(base *echo.Group)
 }
 
-func NewHandler(logger logger.Logger) *Handler {
-	return &Handler{
-		service: service.NewTesterService(client.NewClient(), logger),
-		logger:  logger,
+type InjectionTestHandler struct {
+	tester service.Tester
+	logger logger.Logger
+}
+
+func NewInjectionTestHandler(tester service.Tester, logger logger.Logger) Handler {
+	return &InjectionTestHandler{
+		tester: tester,
+		logger: logger,
 	}
 }
 
-func (h *Handler) mapHealthRouteHandlers(health *echo.Group) {
+func (h *InjectionTestHandler) mapHealthRouteHandlers(health *echo.Group) {
 	health.GET("", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, model.SuccessResponse())
 	})
 }
 
-func (h *Handler) mapBaseRouteHandlers(base *echo.Group) {
+func (h *InjectionTestHandler) mapBaseRouteHandlers(base *echo.Group) {
 	base.DELETE("/:id/terminate", func(c echo.Context) error {
 		testId := c.Param("id")
-		err := h.service.TerminateInjectionTest(testId)
+		err := h.tester.Terminate(testId)
 		if err != nil {
 			h.logger.Error(err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
@@ -44,7 +48,7 @@ func (h *Handler) mapBaseRouteHandlers(base *echo.Group) {
 		if err := c.Bind(requestBody); err != nil {
 			h.logger.Error(err)
 		}
-		id, err := h.service.StartInjectionTest(requestBody)
+		id, err := h.tester.Start(requestBody)
 		if err != nil {
 			h.logger.Error(err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse())
