@@ -28,19 +28,24 @@ func newSingleton() *poolContext {
 	return PlContext
 }
 
-func (pc *poolContext) add(value *WorkerPoolExecutor) (key string, err error) {
-	if pc.checkLimit() {
-		return "", errors.New("work pool limit exceeded")
-	}
+func (pc *poolContext) generateWorkerKey(value *WorkerPoolExecutor) string {
 	h := sha256.New()
-	h.Write([]byte((value.id)))
-	key = hex.EncodeToString(h.Sum(nil))
-	if pc.holder[key] != nil {
-		return "", errors.New("duplicated pool key: " + key)
+	h.Write([]byte((value.name)))
+	key := hex.EncodeToString(h.Sum(nil))
+	return key
+}
+
+func (pc *poolContext) add(value *WorkerPoolExecutor) error {
+	if pc.checkLimit() {
+		return errors.New("work pool limit exceeded")
 	}
-	pc.holder[key] = value
+
+	if pc.holder[value.ID] != nil {
+		return errors.New("duplicated pool key: " + value.ID)
+	}
+	pc.holder[value.ID] = value
 	pc.workCount++
-	return key, nil
+	return nil
 }
 
 func (pc *poolContext) remove(key string) {

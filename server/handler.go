@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"waf-tester/domain/model"
 	"waf-tester/logger"
-	"waf-tester/model"
 	"waf-tester/service"
 )
 
