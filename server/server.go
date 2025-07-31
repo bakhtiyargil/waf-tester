@@ -20,16 +20,16 @@ type Server interface {
 
 type TesterServer struct {
 	echo    *echo.Echo
-	cfg     *config.Config
 	handler Handler
+	cfg     *config.Config
 	logger  logger.Logger
 }
 
-func NewServer(cfg *config.Config, handler Handler, logger logger.Logger) Server {
+func NewServer(handler Handler, cfg *config.Config, logger logger.Logger) Server {
 	return &TesterServer{
 		echo:    echo.New(),
-		cfg:     cfg,
 		handler: handler,
+		cfg:     cfg,
 		logger:  logger,
 	}
 }
