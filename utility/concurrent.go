@@ -6,14 +6,16 @@ import (
 )
 
 type Executor interface {
+	GetId() string
 	Submit(task *Task)
-	Start() (key string, err error)
+	Start() error
 	Finish()
-	Terminate() error
+	TerminateGracefully() error
 }
 
 type WorkerPoolExecutor struct {
-	id         string
+	ID         string
+	name       string
 	numWorkers int
 	taskQ      TaskQueue
 	wg         sync.WaitGroup
@@ -21,22 +23,27 @@ type WorkerPoolExecutor struct {
 	terminate  chan struct{}
 }
 
-func NewWorkerPoolExecutor(id string, workers int, logger logger.Logger) Executor {
-	return &WorkerPoolExecutor{
-		id:         id,
+func NewWorkerPoolExecutor(name string, workers int, logger logger.Logger) Executor {
+	wrk := &WorkerPoolExecutor{
+		name:       name,
 		numWorkers: workers,
 		logger:     logger,
 		terminate:  make(chan struct{}),
 	}
+	wrk.ID = PlContext.generateWorkerKey(wrk)
+	return wrk
 }
 
-func (wp *WorkerPoolExecutor) Start() (poolKey string, err error) {
-	poolKey, err = PlContext.add(wp)
+func (wp *WorkerPoolExecutor) GetId() string {
+	return wp.ID
+}
+
+func (wp *WorkerPoolExecutor) Start() error {
+	err := PlContext.add(wp)
 	if err != nil {
-		return "", err
+		return err
 	}
-	wp.id = poolKey
-	wp.logger.Infof("starting worker pool executor [ID]: %s", poolKey)
+	wp.logger.Infof("starting worker pool executor [ID]: %s", wp.ID)
 	for i := 0; i < wp.numWorkers; i++ {
 		wp.wg.Add(1)
 		go func() {
@@ -47,7 +54,7 @@ func (wp *WorkerPoolExecutor) Start() (poolKey string, err error) {
 					break outer
 				default:
 					if wp.taskQ.IsEmpty() {
-						break
+						break outer
 					}
 					task := wp.taskQ.Dequeue()
 					task.routine(task.staticParam, task.param)
@@ -57,20 +64,20 @@ func (wp *WorkerPoolExecutor) Start() (poolKey string, err error) {
 			defer wp.wg.Done()
 		}()
 	}
-	return wp.id, nil
+	return nil
 }
 
 func (wp *WorkerPoolExecutor) Finish() {
 	wp.wg.Wait()
-	PlContext.remove(wp.id)
-	wp.logger.Infof("stopped worker pool executor [ID]: %s", wp.id)
+	PlContext.remove(wp.ID)
+	wp.logger.Infof("stopped worker pool executor [ID]: %s", wp.ID)
 }
 
 func (wp *WorkerPoolExecutor) Submit(t *Task) {
 	wp.taskQ.Enqueue(t)
 }
 
-func (wp *WorkerPoolExecutor) Terminate() error {
+func (wp *WorkerPoolExecutor) TerminateGracefully() error {
 	close(wp.terminate)
 	return nil
 }

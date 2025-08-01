@@ -1,2 +1,2 @@
 db = db.getSiblingDB("waftester");
-db.createCollection("tests");
+db.createCollection("test");

@@ -13,6 +13,7 @@ type Target struct {
 	Method   string
 	Payload  string
 	Criteria map[int8]string
+	Id       string
 }
 
 var testTarget *Target
@@ -36,7 +37,7 @@ func GetTestTargetInstance() *Target {
 	}
 }
 
-func FromRequest(request *TestRequest) *Target {
+func FromRequest(testId string, request *TestRequest) *Target {
 	target := Target{
 		Host:   request.Host,
 		Path:   request.Path,
@@ -45,6 +46,7 @@ func FromRequest(request *TestRequest) *Target {
 			TextToSearch: request.Criteria.TextToSearch,
 			HttpStatus:   request.Criteria.HttpStatus,
 		},
+		Id: testId,
 	}
 	return &target
 }

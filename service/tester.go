@@ -2,14 +2,16 @@ package service
 
 import (
 	"bufio"
+	"context"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"waf-tester/client"
+	"waf-tester/domain"
+	"waf-tester/domain/model"
 	"waf-tester/logger"
-	"waf-tester/model"
 	"waf-tester/utility"
 )
 
@@ -19,20 +21,22 @@ type Tester interface {
 }
 
 type InjectionTester struct {
-	client client.Client
-	logger logger.Logger
+	client  client.Client
+	logger  logger.Logger
+	useCase domain.TestUseCase
 }
 
-func NewInjectionTester(client client.Client, logger logger.Logger) Tester {
+func NewInjectionTester(client client.Client, logger logger.Logger, useCase domain.TestUseCase) Tester {
 	return &InjectionTester{
-		client: client,
-		logger: logger,
+		client:  client,
+		logger:  logger,
+		useCase: useCase,
 	}
 }
 
-func (t *InjectionTester) Start(testRequest *model.TestRequest) (testId string, err error) {
+func (t *InjectionTester) Start(testRequest *model.TestRequest) (string, error) {
 	wp := utility.NewWorkerPoolExecutor(testRequest.GetApi(), 128, t.logger)
-	err = filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
+	err := filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return t.logger.ErrorR(walkErr)
 		}
@@ -52,7 +56,7 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (testId string, 
 		scanner := bufio.NewScanner(file)
 		var routineFunc utility.RoutineFunction = t.processMethod
 		for scanner.Scan() {
-			task := utility.NewTask(scanner.Text(), model.FromRequest(testRequest), routineFunc)
+			task := utility.NewTask(scanner.Text(), model.FromRequest(wp.GetId(), testRequest), routineFunc)
 			wp.Submit(task)
 		}
 		if err := scanner.Err(); err != nil {
@@ -64,7 +68,7 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (testId string, 
 		return "", t.logger.ErrorR(err)
 	}
 
-	testId, err = wp.Start()
+	err = wp.Start()
 	if err != nil {
 		return "", t.logger.ErrorR(err)
 	}
@@ -72,7 +76,7 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (testId string, 
 		go wp.Finish()
 	}()
 
-	return testId, nil
+	return wp.GetId(), nil
 }
 
 func (t *InjectionTester) Terminate(testId string) error {
@@ -80,7 +84,7 @@ func (t *InjectionTester) Terminate(testId string) error {
 	if err != nil {
 		return err
 	}
-	err = wp.Terminate()
+	err = wp.TerminateGracefully()
 	if err != nil {
 		return err
 	}
@@ -88,22 +92,33 @@ func (t *InjectionTester) Terminate(testId string) error {
 }
 
 func (t *InjectionTester) processMethod(paramStatic interface{}, param interface{}) {
+	var (
+		tst domain.Test
+		err error
+	)
+
 	prs := paramStatic.(*model.Target)
-	escPr := url.PathEscape(param.(string))
-	body, httpStatus, err := t.client.DoRequestWithoutBody(prs.Method, prs.GetUrl()+"/"+escPr)
+	escPr := prs.GetUrl() + "/" + url.PathEscape(param.(string))
+	body, httpStatus, elapsed, err := t.client.DoRequestWithoutBody(prs.Method, escPr)
 	if err != nil {
 		t.logger.Error(err)
+		return
 	}
+
 	if strconv.Itoa(httpStatus) != prs.Criteria[1] {
 		if !strings.Contains(string(body), prs.Criteria[0]) {
-			file, err := os.OpenFile("output.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				t.logger.Error(err)
-				return
+			tst = domain.Test{
+				Host:           prs.Host,
+				Path:           escPr,
+				Method:         prs.Method,
+				ResponseBdy:    string(body),
+				ResponseStatus: httpStatus,
+				ResponseTime:   elapsed.Seconds(),
+				TestID:         prs.Id,
 			}
-			defer file.Close()
 
-			if _, err := file.WriteString(prs.GetUrl() + "/" + escPr + "\n" + string(body) + "\n"); err != nil {
+			_, err = t.useCase.InsertOne(context.Background(), &tst)
+			if err != nil {
 				t.logger.Error(err)
 				return
 			}
