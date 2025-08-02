@@ -113,7 +113,7 @@ func (t *InjectionTester) processMethod(paramStatic interface{}, param interface
 				Method:         prs.Method,
 				ResponseBdy:    string(body),
 				ResponseStatus: httpStatus,
-				ResponseTime:   elapsed.Seconds(),
+				ResponseTime:   elapsed.Milliseconds(),
 				TestID:         prs.Id,
 			}
 
