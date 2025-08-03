@@ -54,9 +54,8 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (string, error) 
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
-		var routineFunc utility.RoutineFunction = t.processMethod
 		for scanner.Scan() {
-			task := utility.NewTask(scanner.Text(), model.FromRequest(wp.GetId(), testRequest), routineFunc)
+			task := utility.NewTask(t.processMethod(model.FromRequest(wp.GetId(), testRequest), scanner.Text()))
 			wp.Submit(task)
 		}
 		if err := scanner.Err(); err != nil {
@@ -80,7 +79,7 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (string, error) 
 }
 
 func (t *InjectionTester) Terminate(testId string) error {
-	var wp, err = utility.PlContext.Get(testId)
+	var wp, err = utility.PlContext.Pop(testId)
 	if err != nil {
 		return err
 	}
@@ -91,36 +90,38 @@ func (t *InjectionTester) Terminate(testId string) error {
 	return nil
 }
 
-func (t *InjectionTester) processMethod(paramStatic interface{}, param interface{}) {
-	var (
-		tst domain.Test
-		err error
-	)
+func (t *InjectionTester) processMethod(paramStatic interface{}, param interface{}) func() {
+	return func() {
+		var (
+			tst domain.Test
+			err error
+		)
 
-	prs := paramStatic.(*model.Target)
-	escPr := prs.GetUrl() + "/" + url.PathEscape(param.(string))
-	body, httpStatus, elapsed, err := t.client.DoRequestWithoutBody(prs.Method, escPr)
-	if err != nil {
-		t.logger.Error(err)
-		return
-	}
+		prs := paramStatic.(*model.Target)
+		escPr := prs.GetUrl() + "/" + url.PathEscape(param.(string))
+		body, httpStatus, elapsed, err := t.client.DoRequestWithoutBody(prs.Method, escPr)
+		if err != nil {
+			t.logger.Error(err)
+			return
+		}
 
-	if strconv.Itoa(httpStatus) != prs.Criteria[1] {
-		if !strings.Contains(string(body), prs.Criteria[0]) {
-			tst = domain.Test{
-				Host:           prs.Host,
-				Path:           escPr,
-				Method:         prs.Method,
-				ResponseBdy:    string(body),
-				ResponseStatus: httpStatus,
-				ResponseTime:   elapsed.Milliseconds(),
-				TestID:         prs.Id,
-			}
+		if strconv.Itoa(httpStatus) != prs.Criteria[1] {
+			if !strings.Contains(string(body), prs.Criteria[0]) {
+				tst = domain.Test{
+					Host:           prs.Host,
+					Path:           escPr,
+					Method:         prs.Method,
+					ResponseBdy:    string(body),
+					ResponseStatus: httpStatus,
+					ResponseTime:   elapsed.Milliseconds(),
+					TestID:         prs.Id,
+				}
 
-			_, err = t.useCase.InsertOne(context.Background(), &tst)
-			if err != nil {
-				t.logger.Error(err)
-				return
+				_, err = t.useCase.InsertOne(context.Background(), &tst)
+				if err != nil {
+					t.logger.Error(err)
+					return
+				}
 			}
 		}
 	}
