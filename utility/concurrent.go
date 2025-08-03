@@ -57,8 +57,7 @@ func (wp *WorkerPoolExecutor) Start() error {
 						break outer
 					}
 					task := wp.taskQ.Dequeue()
-					task.routine(task.staticParam, task.param)
-
+					task.routine()
 				}
 			}
 			defer wp.wg.Done()

@@ -4,21 +4,15 @@ import (
 	"sync"
 )
 
-type RoutineFunction func(paramStatic interface{}, param interface{})
-
 type Task struct {
-	param       interface{}
-	staticParam interface{}
-	routine     RoutineFunction
-	next        *Task
-	prev        *Task
+	routine func()
+	next    *Task
+	prev    *Task
 }
 
-func NewTask(param interface{}, staticParam interface{}, routine RoutineFunction) *Task {
+func NewTask(routine func()) *Task {
 	return &Task{
-		param:       param,
-		staticParam: staticParam,
-		routine:     routine,
+		routine: routine,
 	}
 }
 

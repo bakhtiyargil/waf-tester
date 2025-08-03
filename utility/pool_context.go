@@ -49,6 +49,10 @@ func (pc *poolContext) add(value *WorkerPoolExecutor) error {
 }
 
 func (pc *poolContext) remove(key string) {
+	var _, ok = pc.holder[key]
+	if !ok {
+		return
+	}
 	delete(pc.holder, key)
 }
 
@@ -64,5 +68,14 @@ func (pc *poolContext) Get(key string) (*WorkerPoolExecutor, error) {
 	if !ok {
 		return nil, errors.New("worker doesn't exist in the context with ID: " + key)
 	}
+	return wp, nil
+}
+
+func (pc *poolContext) Pop(key string) (*WorkerPoolExecutor, error) {
+	var wp, ok = pc.holder[key]
+	if !ok {
+		return nil, errors.New("worker doesn't exist in the context with ID: " + key)
+	}
+	delete(pc.holder, key)
 	return wp, nil
 }
