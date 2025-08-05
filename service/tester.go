@@ -55,7 +55,7 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (string, error) 
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			task := utility.NewTask(t.processMethod(model.FromRequest(wp.GetId(), testRequest), scanner.Text()))
+			task := utility.NewTask(t.getRoutine(model.FromRequest(wp.GetId(), testRequest), scanner.Text()))
 			wp.Submit(task)
 		}
 		if err := scanner.Err(); err != nil {
@@ -90,7 +90,7 @@ func (t *InjectionTester) Terminate(testId string) error {
 	return nil
 }
 
-func (t *InjectionTester) processMethod(paramStatic interface{}, param interface{}) func() {
+func (t *InjectionTester) getRoutine(paramStatic interface{}, param interface{}) func() {
 	return func() {
 		var (
 			tst domain.Test
