@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/net/context"
 	"log"
@@ -12,7 +13,6 @@ import (
 	"waf-tester/config"
 	"waf-tester/logger"
 )
-import "github.com/labstack/echo/v4"
 
 type Server interface {
 	Start()
@@ -49,7 +49,7 @@ func (s *TesterServer) Start() {
 			log.Fatalf("error starting server: %v", err)
 		}
 	}()
-	s.appendMiddlewares(s.echo)
+	s.appendMiddleware(s.echo)
 	s.appendRoutes(s.echo)
 
 	quit := make(chan os.Signal, 1)
@@ -67,23 +67,35 @@ func (s *TesterServer) Start() {
 	}
 }
 
-func (s *TesterServer) appendMiddlewares(e *echo.Echo) {
+func (s *TesterServer) appendMiddleware(e *echo.Echo) {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
+		AllowOrigins: s.cfg.Server.Default.AllowOrigins,
 		AllowHeaders: []string{
 			echo.HeaderOrigin,
 			echo.HeaderContentType,
 			echo.HeaderAccept,
-			echo.HeaderXRequestID},
+			echo.HeaderXRequestID,
+		},
+		ExposeHeaders: []string{echo.HeaderXRequestID},
 	}))
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		StackSize:         1 << 10,
 		DisablePrintStack: true,
 		DisableStackAll:   true,
 	}))
+	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
+		XSSProtection:         middleware.DefaultSecureConfig.XSSProtection,
+		ContentTypeNosniff:    middleware.DefaultSecureConfig.ContentTypeNosniff,
+		XFrameOptions:         middleware.DefaultSecureConfig.XFrameOptions,
+		HSTSMaxAge:            31536000,
+		HSTSExcludeSubdomains: false,
+		HSTSPreloadEnabled:    true,
+		ContentSecurityPolicy: "default-src 'self'",
+		ReferrerPolicy:        "strict-origin-when-cross-origin",
+	}))
+
 	e.Use(middleware.RequestID())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{Level: 5}))
-	e.Use(middleware.Secure())
 	e.Use(middleware.BodyLimit("2M"))
 }
 
