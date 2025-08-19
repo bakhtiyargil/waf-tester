@@ -24,6 +24,7 @@ type DefaultServerConfig struct {
 	WriteTimeout   time.Duration `yaml:"writeTimeout"`
 	IdleTimeout    time.Duration `yaml:"idleTimeout"`
 	MaxHeaderBytes int           `yaml:"maxHeaderBytes"`
+	AllowOrigins   []string      `yaml:"allowOrigins"`
 }
 
 type DatabaseConfig struct {
