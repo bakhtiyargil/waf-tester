@@ -38,7 +38,7 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (string, error) 
 	wp := utility.NewWorkerPoolExecutor(testRequest.GetApi(), 128, t.logger)
 	err := filepath.Walk("./data", func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
-			return t.logger.ErrorR(walkErr)
+			return walkErr
 		}
 		if info.IsDir() {
 			return nil
@@ -49,7 +49,7 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (string, error) 
 
 		file, err := os.Open(path)
 		if err != nil {
-			return t.logger.ErrorR(err)
+			return err
 		}
 		defer file.Close()
 
@@ -59,17 +59,17 @@ func (t *InjectionTester) Start(testRequest *model.TestRequest) (string, error) 
 			wp.Submit(task)
 		}
 		if err := scanner.Err(); err != nil {
-			return t.logger.ErrorR(err)
+			return err
 		}
 		return nil
 	})
 	if err != nil {
-		return "", t.logger.ErrorR(err)
+		return "", err
 	}
 
 	err = wp.Start()
 	if err != nil {
-		return "", t.logger.ErrorR(err)
+		return "", err
 	}
 	defer func() {
 		go wp.Finish()

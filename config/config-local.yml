@@ -5,7 +5,7 @@ server:
     writeTimeout: 30
     idleTimeout: 90
     maxHeaderBytes: 1048576
-    allowOrigins: "*"
+    allowOrigins: [ "*" ]
 
 logger:
   level: info
